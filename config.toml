@@ -1,0 +1,14 @@
+delay = 60
+changerate = 0.0087
+message = """
+{{.Title}}
+Price: ¥{{.PriceY}} (${{.PriceCurrency}}) - Buy Now: ¥{{.BuyNowPriceY}} (${{.BuyNowPriceCurrency}})
+Until: {{.Endtime}} - Seller: {{.SellerID}}
+{{.URL}}
+"""
+
+[[searches]]
+url = "your url here"
+
+[[searches]]
+url = "your url here"
