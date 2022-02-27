@@ -66,6 +66,9 @@ func (s *Scraper) scrapeListings(
 	var pulledListings []Listing
 	lastItemIDs := make(map[string][]string)
 
+	// Used to dedupe the final list of scraped products
+	knownListings := make(map[string]int)
+
 	for _, searchURL := range s.URLs {
 		log.Printf("Searching with url %s\n", searchURL)
 		doc, err := web.Get(searchURL)
@@ -96,7 +99,13 @@ func (s *Scraper) scrapeListings(
 		productsList.EachWithBreak(func(i int, sel *goquery.Selection) bool {
 			listing, b := s.parseItem(sel, scraped, searchURL)
 			if listing != nil {
-				pulledListings = append(pulledListings, *listing)
+				if _, ok := knownListings[listing.URL]; !ok {
+					// Add the listing to the results of scraped listings if the listing hasn't been already scraped
+					// for another search URL.
+					pulledListings = append(pulledListings, *listing)
+
+					knownListings[listing.URL] = 1
+				}
 
 				if len(lastItemIDs[searchURL]) < cache.LastIDsSize {
 					lastItemIDs[searchURL] = append(lastItemIDs[searchURL], listing.ID)
