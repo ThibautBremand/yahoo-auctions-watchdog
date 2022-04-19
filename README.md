@@ -8,6 +8,11 @@ Whenever a new listing appears on a search page, you will be notified, on mobile
 
 ![watchdoge](https://user-images.githubusercontent.com/9871294/123490445-4d546a80-d614-11eb-9889-520df15e594e.jpg)
 
+## Note for users located in EU/UK
+Yahoo auctions is not available anymore to users located in europe or in the UK. You need to run this program on a 
+server which is located in another continent (America, Asia, etc), or use a VPN/proxy.
+
+
 ## Quick start
 - Make sure Golang is installed on your machine.
 - Clone the repository
