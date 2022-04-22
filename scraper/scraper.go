@@ -15,14 +15,16 @@ import (
 const dateLayout = "2006-01-02 15:04:05"
 
 type Scraper struct {
-	URLs       []string
-	Changerate float64
+	URLs           []string
+	Changerate     float64
+	DownloadPhotos bool
 }
 
-func NewScraper(URLs []string, changerate float64) *Scraper {
+func NewScraper(URLs []string, changerate float64, downloadPhotos bool) *Scraper {
 	return &Scraper{
-		URLs:       URLs,
-		Changerate: changerate,
+		URLs:           URLs,
+		Changerate:     changerate,
+		DownloadPhotos: downloadPhotos,
 	}
 }
 
