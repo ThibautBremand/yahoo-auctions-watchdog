@@ -1,5 +1,6 @@
 delay = 60
 changerate = 0.0087
+downloadphotos = false
 message = """
 {{.Title}}
 Price: ¥{{.PriceY}} (${{.PriceCurrency}}) - Buy Now: ¥{{.BuyNowPriceY}} (${{.BuyNowPriceCurrency}})

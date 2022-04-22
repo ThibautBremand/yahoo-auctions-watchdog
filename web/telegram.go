@@ -1,35 +1,34 @@
 package web
 
 import (
-	"bytes"
 	"fmt"
-	"net/http"
+	tele "gopkg.in/telebot.v3"
+	"log"
+	"strconv"
 )
 
-// SendTelegramMessage sends the given message to the Telegram bot which is bound to the given token and chatID.
-func SendTelegramMessage(token string, chatID string, message string) error {
-	data := fmt.Sprintf("{\"chat_id\": \"%s\", \"text\": \"%s\"}", chatID, message)
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.telegram.org/bot%v/sendMessage", token), bytes.NewBufferString(data))
+type TelegramClient struct {
+	Client *tele.Bot
+	ChatID tele.ChatID
+}
+
+func NewTelegramClient(token string, chatID string) *TelegramClient {
+	pref := tele.Settings{
+		Token: token,
+	}
+
+	b, err := tele.NewBot(pref)
 	if err != nil {
-		return err
+		log.Fatal(fmt.Errorf("could not instanciate Telegram client: %s", err))
 	}
 
-	req.Header.Add("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	i, err := strconv.ParseInt(chatID, 10, 64)
 	if err != nil {
-		return fmt.Errorf("could not make Telegram request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp == nil {
-		return fmt.Errorf("no response from Telegram request")
+		log.Fatal(fmt.Errorf("could not convert chatID %s to int64: %s", chatID, err))
 	}
 
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("telegram responded with status code %v", resp.StatusCode)
+	return &TelegramClient{
+		Client: b,
+		ChatID: tele.ChatID(i),
 	}
-
-	return nil
 }
