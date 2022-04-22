@@ -2,10 +2,12 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 	"yahoo-auctions-watchdog/cache"
 	"yahoo-auctions-watchdog/config"
 	"yahoo-auctions-watchdog/coordinator"
+	"yahoo-auctions-watchdog/web"
 )
 
 func main() {
@@ -28,6 +30,18 @@ func main() {
 
 	sleepPeriod := time.Duration(cfg.Delay) * time.Second
 
-	c := coordinator.NewCoordinator(cfg.Searches, sleepPeriod, tpl, cfg.Changerate)
+	telegramToken := os.Getenv("TELEGRAM_TOKEN")
+	telegramChatID := os.Getenv("TELEGRAM_CHAT_ID")
+
+	telegramClient := web.NewTelegramClient(telegramToken, telegramChatID)
+
+	c := coordinator.NewCoordinator(
+		cfg.Searches,
+		sleepPeriod,
+		tpl,
+		cfg.Changerate,
+		telegramClient,
+		cfg.DownloadPhotos,
+	)
 	c.Start(scraped)
 }
