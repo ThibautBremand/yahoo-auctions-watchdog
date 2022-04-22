@@ -29,15 +29,16 @@ func NewScraper(URLs []string, changerate float64, downloadPhotos bool) *Scraper
 }
 
 type Listing struct {
-	URL                 string `json:"url"`
-	Title               string `json:"title"`
-	PriceY              string `json:"price_y"`
-	PriceCurrency       string `json:"price_currency"`
-	BuyNowPriceY        string `json:"buy_now_price_y"`
-	BuyNowPriceCurrency string `json:"buy_now_price_currency"`
-	ID                  string `json:"id"`
-	Endtime             string `json:"endtime"`
-	SellerID            string `json:"seller_id"`
+	URL                 string  `json:"url"`
+	Title               string  `json:"title"`
+	PriceY              string  `json:"price_y"`
+	PriceCurrency       string  `json:"price_currency"`
+	BuyNowPriceY        string  `json:"buy_now_price_y"`
+	BuyNowPriceCurrency string  `json:"buy_now_price_currency"`
+	ID                  string  `json:"id"`
+	Endtime             string  `json:"endtime"`
+	SellerID            string  `json:"seller_id"`
+	ImagePath           *string `json:"image_path,omitempty"`
 }
 
 // Scrape starts the scraping for the URLs that are configured.
@@ -177,6 +178,11 @@ func (s *Scraper) parseItem(
 		log.Printf("could not convert currency for %s: %s, setting it as empty...", price, err)
 	}
 
+	image, err := parseImageURL(sel, ID, s.DownloadPhotos)
+	if err != nil {
+		log.Printf("could not find image for product %s, setting it as empty...", URL)
+	}
+
 	listing := Listing{
 		ID:                  ID,
 		URL:                 URL,
@@ -187,6 +193,7 @@ func (s *Scraper) parseItem(
 		BuyNowPriceCurrency: buyNowPriceCurrency,
 		Endtime:             endtime,
 		SellerID:            sellerID,
+		ImagePath:           image,
 	}
 
 	log.Printf("Successfully scraped 1 listing details (ID: %s)\n", listing.ID)
@@ -316,6 +323,29 @@ func parseEndtime(sel *goquery.Selection) (string, error) {
 	}
 
 	return res, nil
+}
+
+func parseImageURL(sel *goquery.Selection, listingID string, downloadPhotos bool) (*string, error) {
+	if !downloadPhotos {
+		return nil, nil
+	}
+
+	img := sel.Find("img.Product__imageData")
+	if img == nil {
+		return nil, fmt.Errorf("could not find image")
+	}
+
+	imgURL, exists := img.Attr("src")
+	if !exists {
+		return nil, fmt.Errorf("could not find image")
+	}
+
+	fileName, err := DownloadFile(imgURL, fmt.Sprintf("./temp/%s", listingID))
+	if err != nil {
+		return nil, fmt.Errorf("could not download image as base64: %s", err)
+	}
+
+	return &fileName, nil
 }
 
 func formatTimestamp(timestamp string) (string, error) {
