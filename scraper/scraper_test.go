@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseItem(t *testing.T) {
-	s := NewScraper([]string{}, 0.0087)
+	s := NewScraper([]string{}, 0.0087, false)
 
 	html := `<div class="Products Products--grid Products--immersive js-immersive" data-logintype="notLogin" data-yid="" data-done="https%3A%2F%2Fauctions.yahoo.co.jp%2Fsearch%2Fsearch%3Fp%3D%25E3%2583%2594%25E3%2582%25AB%25E3%2583%2581%25E3%2583%25A5%25E3%2582%25A6%26va%3D%25E3%2583%2594%25E3%2582%25AB%25E3%2583%2581%25E3%2583%25A5%25E3%2582%25A6%26exflg%3D1%26b%3D1%26n%3D50%26s1%3Dnew%26o1%3Dd%26mode%3D4" data-prefecturecode="13" data-prefecturename="東京都" data-crumb="cf65aa852d2b328e5a11ce383d719eee8bc3f9ccce5bef13b9ce6034ebf513f7" data-bucketid="ctrl100" data-immersive-id="0">
     <div class="Products__list js-immersive-list">

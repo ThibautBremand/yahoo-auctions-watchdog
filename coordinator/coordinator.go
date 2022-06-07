@@ -3,8 +3,10 @@ package coordinator
 import (
 	"bytes"
 	"fmt"
+	tele "gopkg.in/telebot.v3"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -15,9 +17,10 @@ import (
 )
 
 type Coordinator struct {
-	Scraper     *scraper.Scraper
-	SleepPeriod time.Duration
-	Tpl         *template.Template
+	Scraper        *scraper.Scraper
+	SleepPeriod    time.Duration
+	Tpl            *template.Template
+	TelegramClient *web.TelegramClient
 }
 
 func NewCoordinator(
@@ -25,21 +28,26 @@ func NewCoordinator(
 	sleepPeriod time.Duration,
 	tpl *template.Template,
 	changerate float64,
+	telegramClient *web.TelegramClient,
+	downloadPhotos bool,
 ) *Coordinator {
 	URLs := make([]string, len(searches))
 	for i, search := range searches {
 		URLs[i] = search.URL
 	}
 
-	s := scraper.NewScraper(URLs, changerate)
+	s := scraper.NewScraper(URLs, changerate, downloadPhotos)
 	return &Coordinator{
-		Scraper:     s,
-		SleepPeriod: sleepPeriod,
-		Tpl:         tpl,
+		Scraper:        s,
+		SleepPeriod:    sleepPeriod,
+		Tpl:            tpl,
+		TelegramClient: telegramClient,
 	}
 }
 
 func (c *Coordinator) Start(scraped map[string]cache.CachedIDs) {
+	makeAndClearTempDir()
+
 	for {
 		listings, lastItemIDs, err := c.Scraper.Scrape(scraped)
 		if err != nil {
@@ -55,8 +63,9 @@ func (c *Coordinator) Start(scraped map[string]cache.CachedIDs) {
 			log.Println("error while updating scraped URLs, skipping", err)
 		}
 
-		sendToTelegram(listings, c.Tpl)
+		c.sendToTelegram(listings, c.Tpl)
 
+		makeAndClearTempDir()
 		time.Sleep(c.SleepPeriod)
 	}
 }
@@ -128,7 +137,7 @@ func buildCache(lastItemIDs map[string][]string, scraped map[string]cache.Cached
 	return res
 }
 
-func sendToTelegram(listings []scraper.Listing, tpl *template.Template) {
+func (c *Coordinator) sendToTelegram(listings []scraper.Listing, tpl *template.Template) {
 	for _, listing := range listings {
 		buf := &bytes.Buffer{}
 		err := tpl.Execute(buf, listing)
@@ -143,13 +152,38 @@ func sendToTelegram(listings []scraper.Listing, tpl *template.Template) {
 		// Double quotes are not correctly parsed by Telegram
 		msg = strings.ReplaceAll(msg, `"`, "")
 
-		err = web.SendTelegramMessage(
-			os.Getenv("TELEGRAM_TOKEN"),
-			os.Getenv("TELEGRAM_CHAT_ID"),
-			msg,
-		)
+		// If an image has been downloaded, send the Telegram message as a photo + caption
+		if listing.ImagePath != nil {
+			photo := &tele.Photo{
+				File:    tele.FromDisk(*listing.ImagePath),
+				Caption: msg,
+			}
+
+			_, err := c.TelegramClient.Client.Send(c.TelegramClient.ChatID, photo)
+			if err != nil {
+				log.Println("could not send Telegram message", err)
+			}
+
+			continue
+		}
+
+		// No image has been downloaded: send the Telegram message as raw text
+		_, err = c.TelegramClient.Client.Send(c.TelegramClient.ChatID, msg)
 		if err != nil {
 			log.Println("could not send Telegram message", err)
 		}
+	}
+}
+
+// makeAndClearTempDir creates or empties the directory that will contain downloaded photos.
+func makeAndClearTempDir() {
+	err := os.RemoveAll("./temp")
+	if err != nil {
+		log.Fatalf("could not clear temporary directory: %s", err)
+	}
+
+	err = os.MkdirAll(filepath.Join(".", "temp"), os.ModePerm)
+	if err != nil {
+		log.Fatalf("could not create temporary directory")
 	}
 }

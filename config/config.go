@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	Delay      int
-	Message    string
-	Searches   []Search
-	Changerate float64
+	Delay          int
+	Message        string
+	Searches       []Search
+	Changerate     float64
+	DownloadPhotos bool
 }
 
 type Search struct {
